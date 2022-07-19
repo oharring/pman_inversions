@@ -1,0 +1,209 @@
+// let p1=forest (SW), p2=prairie (BK)
+// this script uses demographic parameters estimated in Hager et al. 2022
+// introduces inversion into forest population
+
+
+// set up ancestral population 
+initialize() {
+	//	initializeSLiMOptions(keepPedigrees=T); // to record unique IDs for individuals
+//	initializeTreeSeq(); // for tree sequencing, initialize
+	if (!exists("burn_in")) // total time for simulation
+		defineConstant("burn_in",1);
+	print(paste("burn_in:"+burn_in));
+	if (!exists("scalar")) // scale parameters
+		defineConstant("scalar",1000);
+	print(paste("scalar:"+scalar));
+	if (!exists("NPOP_ANC_initial")) // initial ancestral population size
+		defineConstant("NPOP_ANC_initial",10);
+	print(paste("NPOP_ANC_initial:"+NPOP_ANC_initial));
+	if (!exists("NPOP_ANC")) // updated ancestral population size
+		defineConstant("NPOP_ANC",10);
+	print(paste("NPOP_ANC:"+NPOP_ANC));
+	if (!exists("NPOP_second_SW")) // initial p1 size at split 
+		defineConstant("NPOP_second_SW",10);
+	print(paste("NPOP_second_SW:"+NPOP_second_SW));
+	if (!exists("NPOP_second_BK")) // initial p2 size at split 
+		defineConstant("NPOP_second_BK",10);
+	print(paste("NPOP_second_BK:"+NPOP_second_BK));
+	if (!exists("NPOP_first_SW")) // updated p1 size at time of first size change
+		defineConstant("NPOP_first_SW",10);
+	print(paste("NPOP_first_SW:"+NPOP_first_SW));
+	if (!exists("NPOP_first_BK")) // updated p2 size at time of first size change
+		defineConstant("NPOP_first_BK",10);
+	print(paste("NPOP_first_BK:"+NPOP_first_BK));
+	if (!exists("NPOP_SW")) // updated p1 size at second size change
+		defineConstant("NPOP_SW",10);
+	print(paste("NPOP_SW:"+NPOP_SW));
+	if (!exists("NPOP_BK")) // updated p2 size at second size change
+		defineConstant("NPOP_BK",10);
+	print(paste("NPOP_BK:"+NPOP_BK));
+	if (!exists("TSIZECHANGE_ANC")) // time of ancestral population size change
+		defineConstant("TSIZECHANGE_ANC", 10);
+	print(paste("TSIZECHANGE_ANC:"+TSIZECHANGE_ANC));
+	if (!exists("TDIV")) // time of population split
+		defineConstant("TDIV", 10);
+	print(paste("TDIV:"+TDIV));
+	if (!exists("BMIG_BK_to_SW")) // initial migration rate from p1 (SW) to p2 (BK) which corresponds to migration from BK to SW in fastsimcoal backwards in time model
+		defineConstant("BMIG_BK_to_SW",0.1);
+	print(paste("BMIG_BK_to_SW:"+BMIG_BK_to_SW));
+	if (!exists("BMIG_SW_to_BK")) // initial migration rate from p2 to p1
+		defineConstant("BMIG_SW_to_BK",0.1);
+	print(paste("BMIG_SW_to_BK:"+BMIG_SW_to_BK));
+	if (!exists("AMIG_BK_to_SW")) // updated migration rate from p1 to p2
+		defineConstant("AMIG_BK_to_SW",0.1);
+	print(paste("AMIG_BK_to_SW:"+AMIG_BK_to_SW));
+	if (!exists("AMIG_SW_to_BK")) // updated migration rate from p2 to p1
+		defineConstant("AMIG_SW_to_BK",0.1);
+	print(paste("AMIG_SW_to_BK:"+AMIG_SW_to_BK));
+	if (!exists("TSIZECHANGE_second_SW")) // time of size change for p1
+		defineConstant("TSIZECHANGE_second_SW",10);
+	print(paste("TSIZECHANGE_second_SW:"+TSIZECHANGE_second_SW));
+	if (!exists("TSIZECHANGE_second_BK")) // time of size change for p2
+		defineConstant("TSIZECHANGE_second_BK",10);
+	print(paste("TSIZECHANGE_second_BK:"+TSIZECHANGE_second_BK));
+	if (!exists("TSIZECHANGE_first_SW")) // time of second size change for p1
+		defineConstant("TSIZECHANGE_first_SW",10);
+	print(paste("TSIZECHANGE_first_SW:"+TSIZECHANGE_first_SW));
+	if (!exists("TSIZECHANGE_first_BK")) // time of second size change for p2
+		defineConstant("TSIZECHANGE_first_BK",10);
+	print(paste("TSIZECHANGE_first_BK:"+TSIZECHANGE_first_BK));
+	if (!exists("TMIGAtoB")) // time of migration rate change
+		defineConstant("TMIGAtoB",10);
+	print(paste("TMIGAtoB:"+TMIGAtoB));
+	if (!exists("final_gen")) // final generation of simulation
+		defineConstant("final_gen",100);
+	print(paste("final_gen:"+final_gen));
+	if (!exists("uniq_id")) // unique identifier for each simulation
+		defineConstant("uniq_id",1);
+	print(paste("uniq_id: "+uniq_id));
+	if (!exists("file_name")) // name out output file
+		defineConstant("file_name","~/Desktop/testting5.trees");
+	if (!exists("genome_size")) // set genome size
+		defineConstant("genome_size",100);
+	if (!exists("recombination_rate")) // set recombination rate
+		defineConstant("recombination_rate",0.5e-8);
+	if (!exists("forest_selection")) // inversion selection coefficient in forest population
+		defineConstant("forest_selection",0.9);
+	print(paste("forest_selection:"+forest_selection));
+	if (!exists("prairie_selection")) // inversion selection coefficient in prairie population (homozygotes)
+		defineConstant("prairie_selection",0.98);
+	print(paste("prairie_selection:"+prairie_selection));
+	if (!exists("prairie_selection_het")) // inversion selection coefficient in prairie population (hoeterozygotes)
+		defineConstant("prairie_selection_het",0.99);
+	print(paste("prairie_selection_het:"+prairie_selection_het));
+	if (!exists("time_inversion_introduce")) // time when inversion selection introduced
+		defineConstant("time_inversion_introduce",5);
+	print(paste("time_inversion_introduce:"+time_inversion_introduce));
+	initializeMutationRate(0*scalar); // set mutation rate to 0 for tree sequencing
+	initializeMutationType("m1", 0.5, "f", 0.0); // create neutral mutations
+	initializeMutationType("m2", 0.5, "f", forest_selection); // introduce inversion as a mutation with dominanace coefficient 0.5
+	initializeGenomicElementType("g1", m1, 1.0); // do not initially include inversion 
+	initializeGenomicElement(g1, 0, genome_size); // set up small genomic element 
+	initializeRecombinationRate(0); // for selection analysis, set recombination rate to 0
+}
+
+// set inversion effect in p2
+fitness(m2, p2) { return homozygous ? prairie_selection else prairie_selection_het; } // different effects for homozygous versus het individuals
+
+// initial population is set up in generation 1 with initial number of indivs
+1 { sim.addSubpop("p1", NPOP_ANC_initial);
+	// reset time of the following blocks
+	sim.rescheduleScriptBlock(s1, start=time_inversion_introduce, end=time_inversion_introduce);
+	sim.rescheduleScriptBlock(s11, start=TSIZECHANGE_ANC, end=TSIZECHANGE_ANC);
+	sim.rescheduleScriptBlock(s2, start=TDIV, end=TDIV);
+	sim.rescheduleScriptBlock(s3, start=TDIV, end=TDIV);
+	sim.rescheduleScriptBlock(s4, start=TDIV, end=TDIV);
+	sim.rescheduleScriptBlock(s5, start=TSIZECHANGE_second_SW, end=TSIZECHANGE_second_SW);
+	sim.rescheduleScriptBlock(s6, start=TSIZECHANGE_second_BK, end=TSIZECHANGE_second_BK);
+	sim.rescheduleScriptBlock(s7, start=TSIZECHANGE_first_SW, end=TSIZECHANGE_first_SW);
+	sim.rescheduleScriptBlock(s8, start=TSIZECHANGE_first_BK, end=TSIZECHANGE_first_BK);
+	sim.rescheduleScriptBlock(s9, start=TMIGAtoB, end=TMIGAtoB);
+	sim.rescheduleScriptBlock(s10, start=final_gen, end=final_gen);
+	sim.rescheduleScriptBlock(s12, start=final_gen, end=final_gen);
+	sim.rescheduleScriptBlock(s13, start=time_inversion_introduce+2, end=final_gen);
+}
+
+// introduce inversion into forest population as one copy
+s1 10 late() {
+	target = sample(p1.genomes, 1); // use sample to ensure random individual
+	target.addNewDrawnMutation(m2, 2); // introduce inversion into population, with genomic position
+}
+
+// change ancestral population size
+s11 20 { p1.setSubpopulationSize(NPOP_ANC); }
+
+// population split
+s2 20 {
+	sim.addSubpopSplit("p2", NPOP_second_BK, p1);
+}
+
+// set migration rates at same time as population split
+s3 20 {
+	p1.setMigrationRates(p2, BMIG_SW_to_BK);
+	p2.setMigrationRates(p1, BMIG_BK_to_SW);
+}
+
+// set p1 initial population size at same time as population split
+s4 20 {
+	p1.setSubpopulationSize(NPOP_second_SW);}
+
+// change population 1 size
+s5 20 { p1.setSubpopulationSize(NPOP_first_SW); }
+
+// change population 2 size
+s6 20 { p2.setSubpopulationSize(NPOP_first_BK); }
+
+//// change population 1 size again
+s7 20 { p1.setSubpopulationSize(NPOP_SW); }
+
+//// change population 2 size again
+s8 20 { p2.setSubpopulationSize(NPOP_BK); }
+
+// change migration rates
+s9 20 {
+	p1.setMigrationRates(p2, AMIG_SW_to_BK);
+	p2.setMigrationRates(p1, AMIG_BK_to_SW);
+}
+
+// check if inversion was lost or fixed every 10 generations
+s13 20 late() {
+	if (sim.generation % 10 == 0){
+		sweep = sim.mutationsOfType(m2); // record whether inversion is fixed or lost
+		if (size(sweep) == 0)
+		{
+			fixed = (sum(sim.substitutions.mutationType == m2) == 1);
+			lines = paste(sim.generation + ":p1:" + (fixed ? "1" else "0")+":p2:" + (fixed ? "1" else "0") + ":" + forest_selection+":" + prairie_selection+":" + final_gen + ':' + uniq_id);
+			//		print(lines); //for testing in slim gui only
+			sim.simulationFinished();
+			writeFile(file_name,lines,append=T);
+		}
+	}
+}
+
+// subsample population 1 and population 2
+s12 20 {
+	p1.setSubpopulationSize(15);
+	p2.setSubpopulationSize(15);
+}
+
+// simulation ends at generation final_gen
+s10 100 late() {
+	sweep = sim.mutationsOfType(m2); // record whether inversion is fixed or lost
+	if (size(sweep) == 0)
+	{
+		fixed = (sum(sim.substitutions.mutationType == m2) == 1);
+		lines = paste(sim.generation + ":p1:" + (fixed ? "1" else "0")+":p2:" + (fixed ? "1" else "0") + ":" + forest_selection+":" + prairie_selection+":" + final_gen + ':' + uniq_id);
+		//		print(lines); //for testing in slim gui only
+		sim.simulationFinished();
+	}
+	else // if not fixed or lost, record inversion frequency
+	{
+		// output inversion frequencies in both populations if not fixed or lost
+		freq = sim.mutationFrequencies(p1, sweep);
+		freq2 = sim.mutationFrequencies(p2, sweep);
+		lines = paste(sim.generation + ":p1:" + freq+":p2:" + freq2 + ":" + forest_selection + ":" + prairie_selection + ":" + final_gen + ':' + uniq_id);
+		//		print(lines); //for testing in slim gui only
+	}
+	writeFile(file_name,lines,append=T);
+}
+
