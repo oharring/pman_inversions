@@ -1,5 +1,6 @@
 # pman_inversions
-Scripts associated with Harringmeyer &amp; Hoekstra, 2022
+
+## Scripts associated with Harringmeyer &amp; Hoekstra, 2022
 
 centromeres.sh: script for blasting deer mouse centromere satellite sequence to genome
 
