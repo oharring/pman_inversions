@@ -26,4 +26,4 @@ sedef.sh: script for running SEDEF to identify segmental duplications
 
 selection_simulations1.sh: script for performing forward-genetic simulations in SLiM to characterize selection on an inversion in the forest-prairie populations; inversion introduced into forest population
 
-selection_simulations1.sh: script for performing forward-genetic simulations in SLiM to characterize selection on an inversion in the forest-prairie populations; inversion introduced into prairie population
+selection_simulations2.sh: script for performing forward-genetic simulations in SLiM to characterize selection on an inversion in the forest-prairie populations; inversion introduced into prairie population
